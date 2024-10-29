@@ -109,7 +109,7 @@ def florence(task: str, request: FlorenceRequest):
     response['result'] = result
     return response
 
-@app.post("/flosam")
+@app.post("/flosam/seg-cap-all")
 def flosam(request: FlorenceRequest):
     image = Image.open(requests.get(request.image_url, stream=True).raw)
     flo_processor = Florence2Processor(processors["florence"]["model"], processors["florence"]["processor"], image)
@@ -122,4 +122,14 @@ def flosam(request: FlorenceRequest):
         region_result['segment'] = seg_result['segment']
     response['result'] = region_results
     return response
-    
+
+@app.post("/flosam/seg-cap")
+def flosam(request: FlorenceRequest):
+    image = Image.open(requests.get(request.image_url, stream=True).raw)
+    flo_processor = Florence2Processor(processors["florence"]["model"], processors["florence"]["processor"], image)
+    sam_processor = SAM2Processor(processors["sam2"]["model"], processors["sam2"]["processor"], image)
+    response = {"image": flo_processor.get_image_size()}
+    description = flo_processor.region_to_description(request.box)
+    segmentation = sam_processor.segment(request.box)
+    response['result'] = {"description": description, "segmentation": segmentation}
+    return response
